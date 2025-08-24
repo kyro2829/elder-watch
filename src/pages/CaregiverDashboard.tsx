@@ -13,6 +13,9 @@ import {
   Bell,
   User
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data - will be replaced with Supabase data
 const mockPatients = [
@@ -59,6 +62,7 @@ const mockAlerts = [
 
 export default function CaregiverDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(mockPatients[0]);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -82,6 +86,17 @@ export default function CaregiverDashboard() {
             <Button variant="outline" size="elderly">
               <Bell className="w-5 h-5 mr-2" />
               Alerts ({mockAlerts.length})
+            </Button>
+            <Button
+              variant="outline"
+              size="elderly"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                toast({ title: "Signed out" });
+                navigate("/auth", { replace: true });
+              }}
+            >
+              Sign Out
             </Button>
           </div>
         </div>

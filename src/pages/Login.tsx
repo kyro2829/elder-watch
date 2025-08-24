@@ -12,8 +12,7 @@ export default function Login() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication with Supabase
-    console.log("Login attempt:", { email, role });
+    window.location.href = "/auth";
   };
 
   return (
@@ -106,7 +105,7 @@ export default function Login() {
                 size="large"
                 className="w-full"
               >
-                Sign In
+                Go to Auth
               </ElderlyButton>
             </form>
 

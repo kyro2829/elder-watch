@@ -11,6 +11,9 @@ import {
   User,
   Activity
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data - will be replaced with Supabase data
 const mockPatientData = {
@@ -49,9 +52,19 @@ export default function PatientDashboard() {
           
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Last sync</p>
-            <p className="text-lg font-semibold text-foreground">
-              {mockPatientData.lastSync}
-            </p>
+            <p className="text-lg font-semibold text-foreground">{mockPatientData.lastSync}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                toast({ title: "Signed out" });
+                navigate("/auth", { replace: true });
+              }}
+            >
+              Sign Out
+            </Button>
           </div>
         </div>
 

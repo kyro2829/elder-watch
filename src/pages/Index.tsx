@@ -18,7 +18,7 @@ const Index = () => {
             {/* Main Heading */}
             <div className="space-y-4">
               <h1 className="text-5xl md:text-6xl font-bold text-foreground">
-                Elder Watch
+                Elder Watch - Elderly Health Monitoring
               </h1>
               <p className="text-2xl text-muted-foreground max-w-3xl mx-auto">
                 Comprehensive Health Monitoring System for the Elderly
@@ -31,14 +31,14 @@ const Index = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
-              <Link to="/login">
+              <Link to="/auth">
                 <Button variant="elderly" size="elderly-xl" className="min-w-[200px]">
                   <Heart className="w-6 h-6 mr-3" />
                   I'm a Patient
                 </Button>
               </Link>
               
-              <Link to="/login">
+              <Link to="/auth">
                 <Button variant="elderly-secondary" size="elderly-xl" className="min-w-[200px]">
                   <Shield className="w-6 h-6 mr-3" />
                   I'm a Caregiver
@@ -171,7 +171,7 @@ const Index = () => {
                     </li>
                   </ul>
 
-                  <Link to="/login" className="block pt-4">
+                  <Link to="/auth" className="block pt-4">
                     <Button variant="elderly" size="elderly" className="w-full">
                       Patient Login
                     </Button>
@@ -213,7 +213,7 @@ const Index = () => {
                     </li>
                   </ul>
 
-                  <Link to="/login" className="block pt-4">
+                  <Link to="/auth" className="block pt-4">
                     <Button variant="elderly" size="elderly" className="w-full">
                       Caregiver Login
                     </Button>

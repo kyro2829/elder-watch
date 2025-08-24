@@ -8,6 +8,8 @@ import Login from "./pages/Login";
 import CaregiverDashboard from "./pages/CaregiverDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -19,9 +21,16 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/caregiver" element={<CaregiverDashboard />} />
-          <Route path="/patient" element={<PatientDashboard />} />
+          <Route
+            path="/caregiver"
+            element={<ProtectedRoute><CaregiverDashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/patient"
+            element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>}
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
