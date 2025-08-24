@@ -36,6 +36,8 @@ const mockWeeklyData = [
 ];
 
 export default function PatientDashboard() {
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-8">
