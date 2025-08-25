@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HealthCard } from "@/components/HealthCard";
 import { HealthChart } from "@/components/HealthChart";
 import { AlertDetailsModal } from "@/components/AlertDetailsModal";
+import { AddPatientModal } from "@/components/AddPatientModal";
 import { 
   Heart, 
   Activity, 
@@ -65,9 +66,11 @@ const mockAlerts = [
 ];
 
 export default function CaregiverDashboard() {
+  const [patients, setPatients] = useState(mockPatients);
   const [selectedPatient, setSelectedPatient] = useState(mockPatients[0]);
   const [selectedAlert, setSelectedAlert] = useState<typeof mockAlerts[0] | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
   const navigate = useNavigate();
   const { profile } = useProfile();
   const { healthData } = useHealthData(selectedPatient.id);
@@ -94,6 +97,10 @@ export default function CaregiverDashboard() {
     setShowAlertModal(true);
   };
 
+  const handleAddPatient = (newPatient: any) => {
+    setPatients([...patients, newPatient]);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -109,7 +116,12 @@ export default function CaregiverDashboard() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
-            <Button variant="elderly" size="sm" className="sm:size-elderly">
+            <Button 
+              variant="elderly" 
+              size="sm" 
+              className="sm:size-elderly"
+              onClick={() => setShowAddPatientModal(true)}
+            >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               <span className="hidden sm:inline">Add Patient</span>
               <span className="sm:hidden">Add</span>
@@ -144,7 +156,7 @@ export default function CaregiverDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              {mockPatients.map((patient) => (
+              {patients.map((patient) => (
                 <div
                   key={patient.id}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
@@ -288,6 +300,12 @@ export default function CaregiverDashboard() {
           alert={selectedAlert}
           open={showAlertModal}
           onOpenChange={setShowAlertModal}
+        />
+
+        <AddPatientModal
+          open={showAddPatientModal}
+          onOpenChange={setShowAddPatientModal}
+          onAddPatient={handleAddPatient}
         />
       </div>
     </div>
