@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HealthCard } from "@/components/HealthCard";
+import { HealthChart } from "@/components/HealthChart";
+import { AlertDetailsModal } from "@/components/AlertDetailsModal";
 import { 
   Heart, 
   Activity, 
@@ -16,6 +18,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
+import { useProfile } from "@/hooks/useProfile";
+import { useHealthData } from "@/hooks/useHealthData";
 
 // Mock data - will be replaced with Supabase data
 const mockPatients = [
@@ -62,7 +66,33 @@ const mockAlerts = [
 
 export default function CaregiverDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(mockPatients[0]);
+  const [selectedAlert, setSelectedAlert] = useState<typeof mockAlerts[0] | null>(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
   const navigate = useNavigate();
+  const { profile } = useProfile();
+  const { healthData } = useHealthData(selectedPatient.id);
+
+  // Process health data for charts
+  const processChartData = (dataType: 'heart_rate' | 'sleep_duration') => {
+    const lastSevenDays = healthData.slice(0, 7).reverse();
+    return lastSevenDays.map((item, index) => {
+      const date = new Date(item.created_at);
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return {
+        day: dayNames[date.getDay()],
+        value: item[dataType] || 0,
+        date: item.created_at
+      };
+    });
+  };
+
+  const heartRateData = processChartData('heart_rate');
+  const sleepData = processChartData('sleep_duration');
+
+  const handleViewAlert = (alert: typeof mockAlerts[0]) => {
+    setSelectedAlert(alert);
+    setShowAlertModal(true);
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -154,7 +184,7 @@ export default function CaregiverDashboard() {
             {selectedPatient.name}'s Health Data
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <HealthCard
               title="Heart Rate"
               value={selectedPatient.heartRate}
@@ -184,6 +214,25 @@ export default function CaregiverDashboard() {
               value={selectedPatient.fallDetected ? "Detected" : "None"}
               icon={<AlertTriangle className="w-8 h-8" />}
               status={selectedPatient.fallDetected ? "danger" : "normal"}
+            />
+          </div>
+
+          {/* Patient Health Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <HealthChart
+              title="Heart Rate Trend"
+              data={heartRateData}
+              color="hsl(var(--destructive))"
+              unit="BPM"
+              icon={<Heart className="w-5 h-5" />}
+            />
+            
+            <HealthChart
+              title="Sleep Duration Trend"
+              data={sleepData}
+              color="hsl(var(--primary))"
+              unit="hours"
+              icon={<Moon className="w-5 h-5" />}
             />
           </div>
         </div>
@@ -217,7 +266,12 @@ export default function CaregiverDashboard() {
                   
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">{alert.time}</p>
-                    <Button variant="outline" size="sm" className="mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => handleViewAlert(alert)}
+                    >
                       View Details
                     </Button>
                   </div>
@@ -226,6 +280,12 @@ export default function CaregiverDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <AlertDetailsModal
+          alert={selectedAlert}
+          open={showAlertModal}
+          onOpenChange={setShowAlertModal}
+        />
       </div>
     </div>
   );

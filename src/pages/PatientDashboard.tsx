@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HealthCard } from "@/components/HealthCard";
+import { HealthChart } from "@/components/HealthChart";
+import { CallCaregiverModal } from "@/components/CallCaregiverModal";
 import { 
   Heart, 
   Moon, 
@@ -14,6 +17,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
+import { useProfile } from "@/hooks/useProfile";
+import { useHealthData } from "@/hooks/useHealthData";
 
 // Mock data - will be replaced with Supabase data
 const mockPatientData = {
@@ -37,6 +42,34 @@ const mockWeeklyData = [
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
+  const { profile, loading: profileLoading } = useProfile();
+  const { healthData, currentData, loading: healthLoading } = useHealthData();
+  const [showCallModal, setShowCallModal] = useState(false);
+
+  // Process health data for charts
+  const processChartData = (dataType: 'heart_rate' | 'sleep_duration') => {
+    const lastSevenDays = healthData.slice(0, 7).reverse();
+    return lastSevenDays.map((item, index) => {
+      const date = new Date(item.created_at);
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return {
+        day: dayNames[date.getDay()],
+        value: item[dataType] || 0,
+        date: item.created_at
+      };
+    });
+  };
+
+  const heartRateData = processChartData('heart_rate');
+  const sleepData = processChartData('sleep_duration');
+
+  if (profileLoading || healthLoading) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-background p-6">
@@ -45,7 +78,7 @@ export default function PatientDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-foreground mb-2">
-              Welcome, {mockPatientData.name}
+              Welcome, {profile?.display_name || 'Patient'}
             </h1>
             <p className="text-xl text-muted-foreground">
               Your health monitoring dashboard
@@ -54,7 +87,9 @@ export default function PatientDashboard() {
           
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Last sync</p>
-            <p className="text-lg font-semibold text-foreground">{mockPatientData.lastSync}</p>
+            <p className="text-lg font-semibold text-foreground">
+              {currentData ? new Date(currentData.created_at).toLocaleString() : 'No data'}
+            </p>
             <Button
               variant="outline"
               size="sm"
@@ -80,91 +115,55 @@ export default function PatientDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <HealthCard
               title="Heart Rate"
-              value={mockPatientData.heartRate}
+              value={currentData?.heart_rate || 0}
               unit="BPM"
               icon={<Heart className="w-8 h-8" />}
-              status="normal"
+              status={currentData?.heart_rate && currentData.heart_rate > 90 ? "warning" : "normal"}
             />
             
             <HealthCard
               title="Steps Today"
-              value={mockPatientData.steps.toLocaleString()}
+              value={currentData?.steps?.toLocaleString() || "0"}
               unit="steps"
               icon={<Footprints className="w-8 h-8" />}
-              status="normal"
+              status={currentData?.steps && currentData.steps < 2000 ? "warning" : "normal"}
             />
             
             <HealthCard
               title="Sleep Duration"
-              value={mockPatientData.sleep}
+              value={currentData?.sleep_duration || 0}
               unit="hours"
               icon={<Moon className="w-8 h-8" />}
-              status="normal"
+              status={currentData?.sleep_duration && currentData.sleep_duration < 6 ? "warning" : "normal"}
             />
             
             <HealthCard
               title="Fall Status"
-              value="No Falls"
+              value={currentData?.fall_detected ? "Detected" : "No Falls"}
               icon={<AlertTriangle className="w-8 h-8" />}
-              status="normal"
+              status={currentData?.fall_detected ? "danger" : "normal"}
             />
           </div>
         </div>
 
-        {/* Weekly Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <Calendar className="w-6 h-6" />
-              This Week's Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6">
-              {/* Steps Chart Placeholder */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Footprints className="w-5 h-5" />
-                  Daily Steps
-                </h3>
-                <div className="grid grid-cols-7 gap-2">
-                  {mockWeeklyData.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-secondary/50 rounded-lg">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">
-                        {day.day}
-                      </div>
-                      <div className="text-lg font-bold text-foreground">
-                        {day.steps.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">steps</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sleep Chart Placeholder */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Moon className="w-5 h-5" />
-                  Sleep Hours
-                </h3>
-                <div className="grid grid-cols-7 gap-2">
-                  {mockWeeklyData.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-secondary/50 rounded-lg">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">
-                        {day.day}
-                      </div>
-                      <div className="text-lg font-bold text-foreground">
-                        {day.sleep}
-                      </div>
-                      <div className="text-xs text-muted-foreground">hours</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Weekly Overview - Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <HealthChart
+            title="Heart Rate Trend"
+            data={heartRateData}
+            color="hsl(var(--destructive))"
+            unit="BPM"
+            icon={<Heart className="w-5 h-5" />}
+          />
+          
+          <HealthChart
+            title="Sleep Duration Trend"
+            data={sleepData}
+            color="hsl(var(--primary))"
+            unit="hours"
+            icon={<Moon className="w-5 h-5" />}
+          />
+        </div>
 
         {/* Health Goals */}
         <Card>
@@ -181,7 +180,7 @@ export default function PatientDashboard() {
                 <Footprints className="w-12 h-12 text-primary mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Daily Steps</h3>
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockPatientData.steps.toLocaleString()}
+                  {currentData?.steps?.toLocaleString() || '0'}
                 </div>
                 <div className="text-sm text-muted-foreground mb-3">
                   Goal: 5,000 steps
@@ -189,11 +188,11 @@ export default function PatientDashboard() {
                 <div className="w-full bg-secondary rounded-full h-3">
                   <div 
                     className="bg-primary h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((mockPatientData.steps / 5000) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(((currentData?.steps || 0) / 5000) * 100, 100)}%` }}
                   />
                 </div>
                 <div className="text-sm text-primary font-medium mt-2">
-                  {Math.round((mockPatientData.steps / 5000) * 100)}% Complete
+                  {Math.round(((currentData?.steps || 0) / 5000) * 100)}% Complete
                 </div>
               </div>
 
@@ -202,7 +201,7 @@ export default function PatientDashboard() {
                 <Moon className="w-12 h-12 text-primary mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Sleep Duration</h3>
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockPatientData.sleep}h
+                  {currentData?.sleep_duration || 0}h
                 </div>
                 <div className="text-sm text-muted-foreground mb-3">
                   Goal: 8 hours
@@ -210,11 +209,11 @@ export default function PatientDashboard() {
                 <div className="w-full bg-secondary rounded-full h-3">
                   <div 
                     className="bg-primary h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((mockPatientData.sleep / 8) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(((currentData?.sleep_duration || 0) / 8) * 100, 100)}%` }}
                   />
                 </div>
                 <div className="text-sm text-primary font-medium mt-2">
-                  {Math.round((mockPatientData.sleep / 8) * 100)}% Complete
+                  {Math.round(((currentData?.sleep_duration || 0) / 8) * 100)}% Complete
                 </div>
               </div>
 
@@ -223,7 +222,7 @@ export default function PatientDashboard() {
                 <Heart className="w-12 h-12 text-success mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Heart Rate</h3>
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockPatientData.heartRate}
+                  {currentData?.heart_rate || 0}
                 </div>
                 <div className="text-sm text-muted-foreground mb-3">
                   BPM (Normal Range)
@@ -246,9 +245,19 @@ export default function PatientDashboard() {
             <p className="text-lg text-muted-foreground mb-6">
               If you feel unwell or need assistance, contact your caregiver immediately
             </p>
-            <Button variant="elderly" size="elderly-xl" className="bg-destructive hover:bg-destructive/90">
+            <Button 
+              variant="elderly" 
+              size="elderly-xl" 
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => setShowCallModal(true)}
+            >
               Call Caregiver
             </Button>
+            
+            <CallCaregiverModal 
+              open={showCallModal} 
+              onOpenChange={setShowCallModal} 
+            />
           </CardContent>
         </Card>
       </div>
