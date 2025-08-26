@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Mail, Phone, User } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddPatientModalProps {
   open: boolean;
@@ -36,13 +37,40 @@ export function AddPatientModal({ open, onOpenChange, onAddPatient }: AddPatient
     setLoading(true);
 
     try {
-      // In a real app, this would call the Supabase API
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      // Call the edge function to create patient account
+      const { data, error } = await supabase.functions.invoke('create-patient', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          emergencyContact: formData.emergencyContact
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       const newPatient = {
-        id: Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        emergencyContact: formData.emergencyContact,
+        id: data.patient.id,
+        name: data.patient.name,
+        email: data.patient.email,
+        phone: data.patient.phone,
+        emergencyContact: data.patient.emergencyContact,
         lastUpdate: "Just added",
         status: "normal" as const,
         heartRate: 75,
@@ -55,7 +83,8 @@ export function AddPatientModal({ open, onOpenChange, onAddPatient }: AddPatient
       
       toast({
         title: "Success",
-        description: `${formData.name} has been added as your patient`
+        description: `${formData.name} has been added as your patient. Temporary password: ${data.patient.tempPassword}`,
+        duration: 10000
       });
 
       // Reset form
@@ -67,10 +96,11 @@ export function AddPatientModal({ open, onOpenChange, onAddPatient }: AddPatient
       });
       
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating patient:', error);
       toast({
         title: "Error",
-        description: "Failed to add patient. Please try again.",
+        description: error.message || "Failed to add patient. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -176,7 +206,7 @@ export function AddPatientModal({ open, onOpenChange, onAddPatient }: AddPatient
               className="flex-1"
               disabled={loading}
             >
-              {loading ? "Adding..." : "Add Patient"}
+              {loading ? "Creating Account..." : "Add Patient"}
             </Button>
           </div>
         </form>

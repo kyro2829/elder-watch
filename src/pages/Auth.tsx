@@ -21,20 +21,20 @@ export default function Auth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        // Redirect to appropriate dashboard based on role
-        navigate(role === "patient" ? "/patient" : "/caregiver", { replace: true });
+        // Always redirect caregivers to caregiver dashboard
+        navigate("/caregiver", { replace: true });
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // Redirect to appropriate dashboard based on role
-        navigate(role === "patient" ? "/patient" : "/caregiver", { replace: true });
+        // Always redirect caregivers to caregiver dashboard  
+        navigate("/caregiver", { replace: true });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, role]);
+  }, [navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +45,7 @@ export default function Auth() {
       toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Welcome back!", description: "Signed in successfully." });
-      navigate(role === "patient" ? "/patient" : "/caregiver", { replace: true });
+      navigate("/caregiver", { replace: true });
     }
   };
 
@@ -56,7 +56,13 @@ export default function Auth() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: redirectUrl }
+      options: { 
+        emailRedirectTo: redirectUrl,
+        data: {
+          role: 'caregiver',
+          display_name: email.split('@')[0]
+        }
+      }
     });
     setLoading(false);
     if (error) {
@@ -89,16 +95,16 @@ export default function Auth() {
 
           <CardContent className="space-y-6">
             <form onSubmit={mode === "signin" ? handleSignIn : handleSignUp} className="space-y-6">
-              {/* Role Selection (for redirect only for now) */}
+              {/* Role Selection (only show for caregivers) */}
               <div className="space-y-3">
                 <Label className="text-base font-medium">I am a:</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button type="button" variant={role === "patient" ? "elderly" : "outline"} onClick={() => setRole("patient")}> 
-                    <Heart className="w-5 h-5 mr-2" /> Patient
-                  </Button>
-                  <Button type="button" variant={role === "caregiver" ? "elderly" : "outline"} onClick={() => setRole("caregiver")}> 
+                <div className="grid grid-cols-1 gap-3">
+                  <Button type="button" variant="elderly" onClick={() => setRole("caregiver")}> 
                     <Shield className="w-5 h-5 mr-2" /> Caregiver
                   </Button>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Only caregivers can create accounts. Patients will be added by their caregivers.
+                  </p>
                 </div>
               </div>
 

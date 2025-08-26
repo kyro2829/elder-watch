@@ -6,6 +6,8 @@ interface Profile {
   user_id: string;
   display_name: string | null;
   role: 'patient' | 'caregiver' | null;
+  phone?: string | null;
+  emergency_contact?: string | null;
 }
 
 export function useProfile() {
@@ -21,13 +23,19 @@ export function useProfile() {
           return;
         }
 
-        // For now, create a mock profile until the database tables are ready
-        setProfile({
-          id: '1',
-          user_id: user.id,
-          display_name: user.email?.split('@')[0] || 'User',
-          role: 'patient'
-        });
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setLoading(false);
+          return;
+        }
+
+        setProfile(profileData as Profile);
       } catch (error) {
         console.error('Error in fetchProfile:', error);
       } finally {
