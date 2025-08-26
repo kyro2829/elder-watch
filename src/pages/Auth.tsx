@@ -21,18 +21,20 @@ export default function Auth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        navigate("/", { replace: true });
+        // Redirect to appropriate dashboard based on role
+        navigate(role === "patient" ? "/patient" : "/caregiver", { replace: true });
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/", { replace: true });
+        // Redirect to appropriate dashboard based on role
+        navigate(role === "patient" ? "/patient" : "/caregiver", { replace: true });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, role]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
