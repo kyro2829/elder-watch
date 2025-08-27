@@ -19,17 +19,43 @@ export default function Auth() {
   useEffect(() => {
     document.title = "Login & Register | Elder Watch";
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        // Always redirect caregivers to caregiver dashboard
-        navigate("/caregiver", { replace: true });
+        // Get user profile to determine role and redirect appropriately
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+          
+        if (profile?.role === 'caregiver') {
+          navigate("/caregiver", { replace: true });
+        } else if (profile?.role === 'patient') {
+          navigate("/patient", { replace: true });
+        } else {
+          // If no profile found, default to caregiver dashboard
+          navigate("/caregiver", { replace: true });
+        }
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        // Always redirect caregivers to caregiver dashboard  
-        navigate("/caregiver", { replace: true });
+        // Get user profile to determine role and redirect appropriately
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+          
+        if (profile?.role === 'caregiver') {
+          navigate("/caregiver", { replace: true });
+        } else if (profile?.role === 'patient') {
+          navigate("/patient", { replace: true });
+        } else {
+          // If no profile found, default to caregiver dashboard
+          navigate("/caregiver", { replace: true });
+        }
       }
     });
 
@@ -45,7 +71,7 @@ export default function Auth() {
       toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Welcome back!", description: "Signed in successfully." });
-      navigate("/caregiver", { replace: true });
+      // Navigation will be handled by the auth state change listener
     }
   };
 
@@ -89,24 +115,33 @@ export default function Auth() {
         <Card className="border-2 shadow-xl">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl font-semibold">
-              {mode === "signin" ? "Welcome Back" : "Create your account"}
+              {mode === "signin" ? "Welcome Back" : "Create Caregiver Account"}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
             <form onSubmit={mode === "signin" ? handleSignIn : handleSignUp} className="space-y-6">
-              {/* Role Selection (only show for caregivers) */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">I am a:</Label>
-                <div className="grid grid-cols-1 gap-3">
-                  <Button type="button" variant="elderly" onClick={() => setRole("caregiver")}> 
-                    <Shield className="w-5 h-5 mr-2" /> Caregiver
-                  </Button>
+              {mode === "signup" && (
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Account Type:</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button type="button" variant="elderly" onClick={() => setRole("caregiver")}> 
+                      <Shield className="w-5 h-5 mr-2" /> Caregiver Account
+                    </Button>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Only caregivers can create accounts. Patients will be added by their caregivers.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {mode === "signin" && (
+                <div className="space-y-3">
                   <p className="text-sm text-muted-foreground text-center">
-                    Only caregivers can create accounts. Patients will be added by their caregivers.
+                    Sign in as either a caregiver or patient
                   </p>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-base font-medium">Email Address</Label>

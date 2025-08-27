@@ -27,15 +27,17 @@ export function useProfile() {
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows gracefully
 
         if (error) {
           console.error('Error fetching profile:', error);
-          setLoading(false);
-          return;
+        } else if (!profileData) {
+          // Profile doesn't exist, this could happen for users created before the profiles table
+          console.log('No profile found for user:', user.id);
+          setProfile(null);
+        } else {
+          setProfile(profileData as Profile);
         }
-
-        setProfile(profileData as Profile);
       } catch (error) {
         console.error('Error in fetchProfile:', error);
       } finally {
